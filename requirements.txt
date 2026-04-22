@@ -1,4 +1,4 @@
-langchain-openai
+langchain-google-genai
 langgraph
 openai
 streamlit
