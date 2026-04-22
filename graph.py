@@ -1,14 +1,11 @@
 from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
 import streamlit as st
-
 from state import AgentState
 from rag import RAG
 from tools import mock_lead_capture
 
-# -----------------------------
-# INITIALIZE LLM (Gemini)
-# -----------------------------
+
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     temperature=0,
@@ -16,9 +13,6 @@ llm = ChatGoogleGenerativeAI(
 )
 rag = RAG()
 
-# -----------------------------
-# INTENT DETECTION NODE
-# -----------------------------
 def detect_intent(state: AgentState):
     user_input = state["messages"][-1]
 
@@ -49,19 +43,15 @@ def detect_intent(state: AgentState):
     return state
 
 
-# -----------------------------
-# RESPONSE NODE (RAG + GENERAL)
-# -----------------------------
 def generate_response(state: AgentState):
     user_input = state["messages"][-1]
     intent = state.get("intent")
 
-    # Greeting
     if intent == "greeting":
         state["response"] = "Hey! 👋 I can help you with AutoStream pricing, features, or getting started."
         return state
 
-    # Pricing → RAG
+
     if intent == "pricing":
         context = rag.retrieve(user_input)
 
@@ -78,30 +68,26 @@ def generate_response(state: AgentState):
         state["response"] = result.content
         return state
 
-    # Fallback
     state["response"] = "I can help with pricing or getting started. What would you like to know?"
     return state
 
 
-# -----------------------------
-# LEAD COLLECTION NODE
-# -----------------------------
 def lead_collection(state: AgentState):
     user_input = state["messages"][-1]
 
-    # Ask for name
+   
     if not state.get("name"):
         state["name"] = user_input
         state["response"] = "Great! Let's get you started. What's your name?"
         return state
 
-    # Ask for email
+ 
     elif not state.get("email"):
         state["email"] = user_input
         state["response"] = "What's your email?"
         return state
 
-    # Ask for platform + trigger tool
+   
     elif not state.get("platform"):
         state["platform"] = user_input
 
@@ -117,9 +103,6 @@ def lead_collection(state: AgentState):
     return state
 
 
-# -----------------------------
-# ROUTING LOGIC
-# -----------------------------
 def route(state: AgentState):
     intent = state.get("intent")
 
@@ -129,19 +112,16 @@ def route(state: AgentState):
     return "response"
 
 
-# -----------------------------
-# BUILD GRAPH
-# -----------------------------
 builder = StateGraph(AgentState)
 
 builder.add_node("intent", detect_intent)
 builder.add_node("response", generate_response)
 builder.add_node("lead", lead_collection)
 
-# Entry point
+
 builder.set_entry_point("intent")
 
-# Conditional routing
+
 builder.add_conditional_edges(
     "intent",
     route,
@@ -151,9 +131,8 @@ builder.add_conditional_edges(
     }
 )
 
-# End nodes
 builder.add_edge("response", END)
 builder.add_edge("lead", END)
 
-# Compile graph
+
 graph = builder.compile()
