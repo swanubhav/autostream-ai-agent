@@ -7,7 +7,7 @@ from tools import mock_lead_capture
 
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",
+    model="gemini-2.0-flash",
     temperature=0,
     google_api_key=st.secrets["GOOGLE_API_KEY"]
 )
