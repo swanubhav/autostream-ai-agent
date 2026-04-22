@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, END
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 import os
 
@@ -15,7 +15,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0,
-    api_key=api_key
+    openai_api_key=api_key
 )
 
 rag = RAG()
