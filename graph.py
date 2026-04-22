@@ -14,7 +14,6 @@ llm = ChatGoogleGenerativeAI(
     temperature=0,
     google_api_key=st.secrets["GOOGLE_API_KEY"]
 )
-
 rag = RAG()
 
 # -----------------------------
