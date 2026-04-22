@@ -1,22 +1,18 @@
 from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
-import os
+import streamlit as st
 
 from state import AgentState
 from rag import RAG
 from tools import mock_lead_capture
 
 # -----------------------------
-# LOAD ENV
+# INITIALIZE LLM (Gemini)
 # -----------------------------
-load_dotenv()
-
-# Initialize Gemini LLM
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash",
     temperature=0,
-    google_api_key=os.getenv("GOOGLE_API_KEY")
+    google_api_key=st.secrets["GOOGLE_API_KEY"]
 )
 
 rag = RAG()
@@ -33,8 +29,8 @@ def detect_intent(state: AgentState):
 
     Examples:
     Hi → greeting
-    What are your plans → pricing
-    I want to buy → high_intent
+    What are your pricing plans → pricing
+    I want to try Pro plan → high_intent
 
     Input: {user_input}
     """
@@ -70,7 +66,7 @@ def generate_response(state: AgentState):
     if intent == "pricing":
         context = rag.retrieve(user_input)
 
-        response = llm.invoke(f"""
+        result = llm.invoke(f"""
         Use the context below to answer clearly and concisely.
 
         Context:
@@ -80,10 +76,10 @@ def generate_response(state: AgentState):
         {user_input}
         """)
 
-        state["response"] = response.content
+        state["response"] = result.content
         return state
 
-    # General fallback
+    # Fallback
     state["response"] = "I can help with pricing or getting started. What would you like to know?"
     return state
 
@@ -96,8 +92,8 @@ def lead_collection(state: AgentState):
 
     # Ask for name
     if not state.get("name"):
-        state["response"] = "Great! Let's get you started. What's your name?"
         state["name"] = user_input
+        state["response"] = "Great! Let's get you started. What's your name?"
         return state
 
     # Ask for email
@@ -106,7 +102,7 @@ def lead_collection(state: AgentState):
         state["response"] = "What's your email?"
         return state
 
-    # Ask for platform
+    # Ask for platform + trigger tool
     elif not state.get("platform"):
         state["platform"] = user_input
 
@@ -160,5 +156,5 @@ builder.add_conditional_edges(
 builder.add_edge("response", END)
 builder.add_edge("lead", END)
 
-# Compile
+# Compile graph
 graph = builder.compile()
